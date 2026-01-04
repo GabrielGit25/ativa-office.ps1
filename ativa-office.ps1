@@ -1,65 +1,43 @@
-# ATIVA OFFICE MENU v2.0 - ZERO PARÂMETROS
-$Url = "https://get.activated.win"
+# MAS Menu v1.0 - massgrave.dev INTERATIVO
+Write-Host "🎯 Microsoft Activation Scripts - MENU" -ForegroundColor Cyan -BackgroundColor Black
+Write-Host "https://massgrave.dev" -ForegroundColor Green
 
-Clear-Host
-Write-Host "╔══════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "║           ATIVA OFFICE v2.0         ║" -ForegroundColor Cyan
-Write-Host "╚══════════════════════════════════════╝" -ForegroundColor Cyan
-
-function Show-Menu {
-    Write-Host ""
-    Write-Host "  1) Ativar Office/Windows (MAS)" -ForegroundColor Green
-    Write-Host "  2) Mostrar status do profile" -ForegroundColor Yellow
-    Write-Host "  3) Instalar comando 'ativa-office'" -ForegroundColor Cyan
-    Write-Host "  0) Sair" -ForegroundColor Gray
-    Write-Host ""
+# Baixa MAS (SEM executar)
+try {
+    $mas = irm https://get.activated.win
+    Write-Host "✅ MAS baixado! Escolha opção:" -ForegroundColor Green
+} catch {
+    Write-Host "❌ Falha download. Tente VPN/proxy" -ForegroundColor Red
+    exit
 }
 
-function Ativar-MAS {
-    Write-Host "`nBaixando MAS e abrindo menu..." -ForegroundColor Green
-    irm $Url | iex
+# Extrai opções do MAS
+$opcoes = $mas | Select-String -Pattern "(?m)^:\w+\s+" -AllMatches | ForEach-Object { $_.Matches.Value.Trim() } | Select-Object -Unique
+
+$menu = @{}
+$i = 1
+foreach($op in $opcoes) {
+    $menu[$i] = $op
+    Write-Host "$i. $op" -ForegroundColor White
+    $i++
 }
 
-function Status-Profile {
-    Write-Host "`nProfile: $PROFILE" -ForegroundColor Gray
-    if (Test-Path $PROFILE) {
-        if (Select-String -Path $PROFILE -Pattern "ativa-office" -ErrorAction SilentlyContinue) {
-            Write-Host "Alias 'ativa-office' está registrado no profile." -ForegroundColor Green
-        } else {
-            Write-Host "Alias 'ativa-office' NÃO está registrado no profile." -ForegroundColor Red
-        }
-    } else {
-        Write-Host "Profile ainda não existe." -ForegroundColor Red
-    }
-    Read-Host "`nPressione ENTER para voltar ao menu" | Out-Null
-}
+Write-Host "`n0. Sair" -ForegroundColor Yellow
+$escolha = Read-Host "Digite numero"
 
-function Instalar-Alias {
-    if (!(Test-Path $PROFILE)) {
-        New-Item -Path $PROFILE -ItemType File -Force | Out-Null
-    }
-    $linha = 'function ativa-office { irm https://get.activated.win | iex }'
-    if (-not (Select-String -Path $PROFILE -Pattern "ativa-office" -ErrorAction SilentlyContinue)) {
-        Add-Content -Path $PROFILE -Value $linha
-        Write-Host "`nAlias instalado. Feche e abra o PowerShell e use: ativa-office" -ForegroundColor Green
-    } else {
-        Write-Host "`nAlias já existia no profile." -ForegroundColor Yellow
-    }
-    Read-Host "`nPressione ENTER para voltar ao menu" | Out-Null
-}
+if($escolha -eq "0") { exit }
 
-do {
-    Show-Menu
-    $op = Read-Host "Escolha (0-3)"
-    switch ($op) {
-        "1" { Ativar-MAS }
-        "2" { Status-Profile }
-        "3" { Instalar-Alias }
-        "0" { break }
-        default {
-            Write-Host "Opção inválida." -ForegroundColor Red
-            Start-Sleep 1
-        }
+if($menu[[int]$escolha]) {
+    Write-Host "`n🚀 Executando: $($menu[[int]$escolha])" -ForegroundColor Blue
+    
+    # Extrai comando específico
+    $cmd = $mas | Select-String -Pattern ":$($menu[[int]$escolha].Substring(1))" -Context 0,10
+    $cmd.Lines | Out-Host
+    
+    $confirm = Read-Host "`nCONFIRMA? (s/N)"
+    if($confirm -eq "s" -or $confirm -eq "S") {
+        irm https://get.activated.win | iex "$($menu[[int]$escolha])"
     }
-    Clear-Host
-} while ($true)
+} else {
+    Write-Host "❌ Opção inválida!" -ForegroundColor Red
+}
