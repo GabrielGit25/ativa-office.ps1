@@ -1,58 +1,65 @@
-# ATIVA OFFICE v1.1 - INSTALA ALIAS PERMANENTE
-param([ValidateSet("ativa","desativa","status","instalar")][string]$Acao = "instalar")
-
+# ATIVA OFFICE MENU v2.0 - ZERO PARÂMETROS
 $Url = "https://get.activated.win"
-$ProfilePath = "$PROFILE"
 
-function Install-Alias {
-    if(!(Test-Path $ProfilePath)){ New-Item -Path $ProfilePath -ItemType File -Force | Out-Null }
-    
-    $aliasCode = @"
-# ATIVA OFFICE - massgrave.dev
-function ATIVA-OFFICE {
+Clear-Host
+Write-Host "╔══════════════════════════════════════╗" -ForegroundColor Cyan
+Write-Host "║           ATIVA OFFICE v2.0         ║" -ForegroundColor Cyan
+Write-Host "╚══════════════════════════════════════╝" -ForegroundColor Cyan
+
+function Show-Menu {
+    Write-Host ""
+    Write-Host "  1) Ativar Office/Windows (MAS)" -ForegroundColor Green
+    Write-Host "  2) Mostrar status do profile" -ForegroundColor Yellow
+    Write-Host "  3) Instalar comando 'ativa-office'" -ForegroundColor Cyan
+    Write-Host "  0) Sair" -ForegroundColor Gray
+    Write-Host ""
+}
+
+function Ativar-MAS {
+    Write-Host "`nBaixando MAS e abrindo menu..." -ForegroundColor Green
     irm $Url | iex
-    Write-Host "✅ Office ATIVADO!" -ForegroundColor Green
 }
-Set-Alias -Name "ativa-office" -Value "ATIVA-OFFICE"
-Set-Alias -Name "ao" -Value "ATIVA-OFFICE"
-"@
-    
-    $content = Get-Content $ProfilePath -ErrorAction SilentlyContinue
-    if($content -notmatch "ATIVA-OFFICE") {
-        $aliasCode | Out-File $ProfilePath -Append -Encoding UTF8
-        . $ProfilePath
-        Write-Host "✅ ALIAS INSTALADO PERMANENTE!" -ForegroundColor Green
-        Write-Host "👉 Teste: ativa-office / ao" -ForegroundColor Cyan
+
+function Status-Profile {
+    Write-Host "`nProfile: $PROFILE" -ForegroundColor Gray
+    if (Test-Path $PROFILE) {
+        if (Select-String -Path $PROFILE -Pattern "ativa-office" -ErrorAction SilentlyContinue) {
+            Write-Host "Alias 'ativa-office' está registrado no profile." -ForegroundColor Green
+        } else {
+            Write-Host "Alias 'ativa-office' NÃO está registrado no profile." -ForegroundColor Red
+        }
     } else {
-        Write-Host "✅ Alias JA instalado!" -ForegroundColor Yellow
-        . $ProfilePath
+        Write-Host "Profile ainda não existe." -ForegroundColor Red
     }
+    Read-Host "`nPressione ENTER para voltar ao menu" | Out-Null
 }
 
-function Uninstall-Alias {
-    if(Test-Path $ProfilePath) {
-        $content = Get-Content $ProfilePath | Where-Object { $_ -notmatch "ATIVA-OFFICE|ativa-office|ao" }
-        $content | Out-File $ProfilePath -Encoding UTF8
-        Remove-ItemAlias "ativa-office" -ErrorAction SilentlyContinue
-        Remove-ItemAlias "ao" -ErrorAction SilentlyContinue
-        Write-Host "✅ Alias REMOVIDO!" -ForegroundColor Red
+function Instalar-Alias {
+    if (!(Test-Path $PROFILE)) {
+        New-Item -Path $PROFILE -ItemType File -Force | Out-Null
     }
+    $linha = 'function ativa-office { irm https://get.activated.win | iex }'
+    if (-not (Select-String -Path $PROFILE -Pattern "ativa-office" -ErrorAction SilentlyContinue)) {
+        Add-Content -Path $PROFILE -Value $linha
+        Write-Host "`nAlias instalado. Feche e abra o PowerShell e use: ativa-office" -ForegroundColor Green
+    } else {
+        Write-Host "`nAlias já existia no profile." -ForegroundColor Yellow
+    }
+    Read-Host "`nPressione ENTER para voltar ao menu" | Out-Null
 }
 
-switch($Acao) {
-    "instalar" { Install-Alias }
-    "ativa" { ATIVA-OFFICE }
-    "desativa" { Uninstall-Alias }
-    "status" { 
-        if(Get-Alias "ativa-office" -ErrorAction SilentlyContinue) { Write-Host "✅ ativa-office OK" -ForegroundColor Green }
-        else { Write-Host "❌ ativa-office NÃO instalado" -ForegroundColor Red }
+do {
+    Show-Menu
+    $op = Read-Host "Escolha (0-3)"
+    switch ($op) {
+        "1" { Ativar-MAS }
+        "2" { Status-Profile }
+        "3" { Instalar-Alias }
+        "0" { break }
+        default {
+            Write-Host "Opção inválida." -ForegroundColor Red
+            Start-Sleep 1
+        }
     }
-    default { 
-        Write-Host "`n🎯 ATIVA OFFICE v1.1" -ForegroundColor Cyan
-        Write-Host "1. INSTALAR alias permanente" -ForegroundColor Green
-        Write-Host "2. ATIVAR Office" -ForegroundColor Blue
-        Write-Host "3. DESATIVAR alias" -ForegroundColor Red
-        $op = Read-Host "`nDigite (1-3)"
-        & $MyInvocation.MyCommand.ScriptBlock -Acao $(if($op -eq "1"){"instalar"}elseif($op -eq "2"){"ativa"}else{"desativa"})
-    }
-}
+    Clear-Host
+} while ($true)
